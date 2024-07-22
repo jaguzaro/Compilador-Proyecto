@@ -1,0 +1,427 @@
+// ------------  Paquete e importaciones ------------
+package source_compi;
+import util.Instruction;
+import util.MathOperations;
+import util.Data;
+import util.GraphBar;
+import util.GraphPie;
+import util.GraphLine;
+import util.GraphHistogram;
+import java.util.ArrayList;
+import java.util.Arrays;
+import util.StatisticalOperations;
+import java_cup.runtime.*;
+
+
+//------> Codigo para el parser
+//------> Declaracion de variables, funciones y funciones de error
+
+parser code 
+{:
+    private Instruction instruction = new Instruction();
+    private MathOperations mathOP = new MathOperations();
+    private StatisticalOperations sttOP = new StatisticalOperations();
+    public String resultado = ""; 
+
+    public void syntax_error(Symbol s)
+    {
+            System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Recuperado" );
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {
+            System.err.println("Error Sintactico: "+ s.value + " - Fila: " + s.right + " - Columna: " + s.left + ". Sin recuperacion." );
+    }
+
+:}
+
+
+//------> Codigo para las acciones gramaticales (no tocar)
+action code
+{:  :}
+
+
+//------> Declaración de terminales
+terminal String NMBR, STRNG, NAMEVAR, ARR;
+terminal String VRBL, TYPED, TYPEC, END, CNSL, PRNT, CLMN;
+terminal String SAT, CMM, DPOINTS, ASIG, SMCLN, SEQLS, ASIGCLMN;
+terminal String PRGRM, ENDPRGRM, WSUM, WRES, WMUL, WDIV, WMOD;
+terminal String WMED, WMEDN, WMDA, WVRNZ, WMX, WMN;
+terminal String GBAR, GPIE, GLINE, HSTGRM;
+terminal String EXEC;
+terminal String TTL, TTLX, TTLY, AXISX, AXISY, LBL, VLS;
+
+//Signs of encapsulation
+
+terminal String LSBRCKT, RSBRCKT, LSPRTH, RSPRTH, SMINUS, RArrow, LARROW;
+
+
+//------> Declaración de no terminales
+non terminal inicio;
+non terminal instruction, instructions_list;
+non terminal exps_nmbr, exps_chr, exps_arrd, exps_arrc, exps_est, exps_prnt, exps_clmn, exps_grph_bar, exps_grph_ch, exps_grph_pie, exps_grph_ln, exps_grph_hst, exps_arrc_clmn;
+non terminal varasigdouble, varasigchar, varasigarr;
+non terminal math_op, ins_op, ins_est, ins_cnsl, ins_clmn;
+
+non terminal ins_grph_bar, ins_grph_pie, ins_grph_ln, ins_grph_hst;
+non terminal varasigtitle, varasigaxisX, varasigaxisY, varasigtitleX, varasigtitleY, varasiglabel, varasigvalues;
+non terminal data_grph_bar, data_grph_pie, data_grph_ln, data_grph_hst;
+
+non terminal exps_var_clmn, exps_array_clmn;
+
+//------> Precedencia
+
+
+//------> Definir Simbolo Inicial
+start with inicio; 
+
+
+// ------------>  Producciones  <------------
+
+inicio ::= PRGRM instructions_list ENDPRGRM
+;
+
+instructions_list ::= instructions_list instruction 
+            | instruction
+            
+;
+
+instruction ::= varasigdouble
+            | varasigchar
+            | varasigarr
+            | ins_cnsl
+            | ins_clmn
+            | exps_grph_bar
+            | exps_grph_pie
+            | exps_grph_ln
+            | exps_grph_hst
+;
+
+//------------> variable assignment
+
+
+varasigdouble ::= VRBL:v DPOINTS TYPED:typed DPOINTS DPOINTS NAMEVAR:namevar LARROW SMINUS exps_nmbr:exp END SMCLN 
+            {: main.Main.mainController.insertSymbolsTable(namevar, typed, exp.toString(), vleft, vright); :}
+;
+
+varasigchar ::= VRBL:v DPOINTS TYPEC:typec DPOINTS DPOINTS NAMEVAR:namevar LARROW SMINUS exps_chr:exp END SMCLN 
+            {: main.Main.mainController.insertSymbolsTable(namevar, typec, exp.toString(), vleft, vright); :}
+;
+
+varasigarr ::= ARR:a DPOINTS TYPED:typed DPOINTS DPOINTS SAT NAMEVAR:namevar LARROW SMINUS LSBRCKT exps_arrd:exp RSBRCKT END SMCLN 
+            {: main.Main.mainController.insertSymbolsTable(namevar, typed, exp, aleft, aright); :}
+            | ARR:a DPOINTS TYPEC:typec DPOINTS DPOINTS SAT NAMEVAR:namevar LARROW SMINUS LSBRCKT exps_arrc:exp RSBRCKT END SMCLN 
+            {: main.Main.mainController.insertSymbolsTable(namevar, typec, exp, aleft, aright); :}
+;
+
+//-------------> Expressions
+
+exps_nmbr ::= NMBR:exps {: RESULT = exps; :}
+            | math_op:exp {: RESULT = exp; :}
+            | NAMEVAR:exp {: RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value; :}
+            
+;
+
+exps_chr ::= STRNG:exp {: RESULT = exp.toString(); :}
+            | NAMEVAR:exp {: RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value; :}
+;
+
+exps_arrd ::= exps_nmbr:exp
+            {:
+                ArrayList<Double> list = new ArrayList<>();
+                list.add(Double.parseDouble(String.valueOf(exp)));
+                RESULT = list;
+            :}
+            | exps_arrd:lft CMM exps_nmbr:rght 
+            {:
+                ArrayList<Double> expsList = (ArrayList<Double>) lft;
+                expsList.add(Double.parseDouble(String.valueOf(rght)));
+                RESULT = expsList;
+            :}
+;
+
+exps_arrc ::= exps_chr:exp
+            {:
+                ArrayList<String> list = new ArrayList<>();
+                list.add(String.valueOf(exp));
+                RESULT = list;
+            :}
+            |  exps_arrc:lft CMM exps_chr:rght
+            {:
+                ArrayList<String> expsList = (ArrayList<String>) lft;
+                expsList.add(String.valueOf(rght));
+                RESULT = expsList;
+            :}
+;
+
+// Graph Bar and statistics
+exps_est ::= SAT NAMEVAR:exp 
+            {: 
+                RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value;
+            :}
+            | LSBRCKT exps_arrd:exp RSBRCKT {: RESULT = exp;  :}
+;
+
+exps_var_clmn ::= NMBR:exp {: RESULT = exp.toString(); :}
+            | STRNG:exp {: RESULT = exp.toString(); :}
+            | NAMEVAR:exp {: RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value; :}
+;
+
+exps_array_clmn ::= exps_var_clmn:exp
+            {:
+                ArrayList<String> list = new ArrayList<>();
+                list.add(String.valueOf(exp));
+                RESULT = list;
+            :}
+            | exps_array_clmn:lft CMM exps_var_clmn:rght 
+            {:
+                ArrayList<String> expsList = (ArrayList<String>) lft;
+                expsList.add(String.valueOf(rght));
+                RESULT = expsList;
+            :}
+;
+//--------------> Mth Operations
+
+math_op ::= ins_op:value {: RESULT = value.toString(); :}
+            | ins_est:value {: RESULT = value.toString(); :}
+;
+
+ins_op ::= WSUM LSPRTH exps_nmbr:left CMM exps_nmbr:right RSPRTH {: RESULT = mathOP.sum(Double.parseDouble(String.valueOf(left)), Double.parseDouble(String.valueOf(right))); :}
+            | WRES LSPRTH exps_nmbr:left CMM exps_nmbr:right RSPRTH {: RESULT = mathOP.minus(Double.parseDouble(String.valueOf(left)), Double.parseDouble(String.valueOf(right))); :}
+            | WMUL LSPRTH exps_nmbr:left CMM exps_nmbr:right RSPRTH {: RESULT = mathOP.mul(Double.parseDouble(String.valueOf(left)), Double.parseDouble(String.valueOf(right))); :}
+            | WDIV LSPRTH exps_nmbr:left CMM exps_nmbr:right RSPRTH {: RESULT = mathOP.div(Double.parseDouble(String.valueOf(left)), Double.parseDouble(String.valueOf(right))); :}
+            | WMOD LSPRTH exps_nmbr:left CMM exps_nmbr:right RSPRTH {: RESULT = mathOP.mod(Double.parseDouble(String.valueOf(left)), Double.parseDouble(String.valueOf(right))); :}
+;
+
+ins_est ::= WMED LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.calculateAverage((ArrayList<Double>)exp); :}
+            | WMEDN LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.calculateMedian((ArrayList<Double>)exp); :}
+            | WMDA LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.calculateModa((ArrayList<Double>)exp); :}
+            | WVRNZ LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.calculateVariance((ArrayList<Double>)exp); :}
+            | WMX LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.getMax((ArrayList<Double>)exp); :}
+            | WMN LSPRTH exps_est:exp RSPRTH {: RESULT = sttOP.getMin((ArrayList<Double>)exp); :}
+;
+
+//------------> Comments
+
+//------------> Consoles Prints
+
+ins_cnsl ::= CNSL DPOINTS DPOINTS PRNT SEQLS exps_prnt:exp END SMCLN {: main.Main.mainController.viewList((ArrayList<Object>) exp); :}
+;
+
+exps_prnt ::= exps_nmbr:exp
+            {:
+                ArrayList<Object> list = new ArrayList<>();
+                list.add(String.valueOf(exp));
+                RESULT = list;
+            :}
+            | STRNG:exp
+            {:
+                ArrayList<Object> list = new ArrayList<>();
+                list.add(String.valueOf(exp));
+                RESULT = list;
+            :}
+            | exps_prnt:lft CMM exps_nmbr:rght
+            {:
+                ArrayList<Object> expsList = (ArrayList<Object>) lft;
+                expsList.add(String.valueOf(rght));
+                RESULT = expsList;
+            :}
+            | exps_prnt:lft CMM STRNG:rght
+            {:
+                ArrayList<Object> expsList = (ArrayList<Object>) lft;
+                expsList.add(String.valueOf(rght));
+                RESULT = expsList;
+            :}
+;
+
+ins_clmn ::= CNSL DPOINTS DPOINTS CLMN SEQLS exps_chr:exp SMINUS RArrow exps_arrc_clmn:listexp END SMCLN
+    {:
+        main.Main.mainController.viewColumn(exp.toString(), (ArrayList<Object>) listexp);
+    :}
+;
+
+exps_clmn ::= exps_est:exp  {: RESULT = exp; :}
+            | exps_arrc_clmn:exp {: RESULT = exp; :}
+;
+
+exps_arrc_clmn ::= SAT NAMEVAR:exp 
+            {: 
+                RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value;
+            :}
+            | LSBRCKT exps_array_clmn:exp RSBRCKT {: RESULT = exp;  :}
+;
+
+//-------------> Graphs
+
+exps_grph_bar ::= GBAR LSPRTH data_grph_bar:exp EXEC GBAR END SMCLN RSPRTH END SMCLN
+            {:  
+                GraphBar datos = (GraphBar)exp;
+                main.Main.mainController.generateGraphBar(datos);
+            :}
+;
+
+exps_grph_pie ::= GPIE LSPRTH data_grph_pie:exp EXEC GPIE END SMCLN RSPRTH END SMCLN
+            {:  
+                GraphPie datos = (GraphPie)exp;
+                main.Main.mainController.generateGraphPie(datos);
+            :}
+;
+
+exps_grph_ln ::= GLINE LSPRTH data_grph_ln:exp EXEC GLINE END SMCLN RSPRTH END SMCLN
+            {:  
+                GraphLine datos = (GraphLine)exp;
+                main.Main.mainController.generateGraphLine(datos);
+            :}
+;
+
+exps_grph_hst ::= HSTGRM LSPRTH data_grph_hst:exp EXEC HSTGRM END SMCLN RSPRTH END SMCLN
+            {:  
+                GraphHistogram datos = (GraphHistogram)exp;
+                System.out.print(datos.title); 
+            :}
+;
+
+exps_grph_ch ::= SAT NAMEVAR:exp 
+            {: 
+                RESULT = main.Main.mainController.symbolsTable.get(exp.toString()).value;
+            :}
+            | LSBRCKT exps_arrc:exp RSBRCKT {: RESULT = exp;  :}
+;
+
+ins_grph_bar ::= varasigtitle:exp 
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Title", exp.toString()));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasigaxisX:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("AxisX", exp));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasigaxisY:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("AxisY", exp));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasigtitleX:exp 
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("TitleX", exp.toString()));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasigtitleY:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("TitleY", exp.toString()));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+;
+
+ins_grph_pie ::= varasigtitle:exp 
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Title", exp.toString()));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasiglabel:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Label", exp));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+            | varasigvalues:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Values", exp));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+;
+
+ins_grph_hst ::= varasigtitle:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Title", exp.toString()));
+                RESULT = (ArrayList<Object>) parameters;
+            :}
+            | varasigvalues:exp
+            {:
+                ArrayList<Object> parameters = new ArrayList<>(Arrays.asList("Values", exp));
+                RESULT = (ArrayList<Object>) parameters; 
+            :}
+;
+
+data_grph_bar ::= data_grph_bar:lft ins_grph_bar:rght 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphBar(1, (GraphBar)lft, (ArrayList<Object>)rght);
+            :}
+            | ins_grph_bar:exp 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphBar(2, null, (ArrayList<Object>)exp);
+            :}
+;
+
+data_grph_pie ::= data_grph_pie:lft ins_grph_pie:rght 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphPie(1, (GraphPie)lft, (ArrayList<Object>)rght);
+            :}
+            | ins_grph_pie:exp 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphPie(2, null, (ArrayList<Object>)exp);
+            :}
+;
+
+data_grph_ln ::= data_grph_ln:lft ins_grph_bar:rght 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphLine(1, (GraphLine)lft, (ArrayList<Object>)rght);
+            :}
+            | ins_grph_bar:exp 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphLine(2, null, (ArrayList<Object>)exp);
+            :}
+;
+
+data_grph_hst ::= data_grph_hst:lft ins_grph_hst:rght 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphHistogram(1, (GraphHistogram)lft, (ArrayList<Object>)rght);
+            :}
+            | ins_grph_hst:exp 
+            {: 
+                RESULT = main.Main.mainController.saveDataGraphHistogram(2, null, (ArrayList<Object>)exp);
+            :}
+;
+
+varasigtitle ::= TTL DPOINTS DPOINTS TYPEC SEQLS exps_chr:exp END SMCLN
+            {: 
+                RESULT = exp.toString();
+            :}
+;
+
+varasigaxisX ::= AXISX DPOINTS DPOINTS TYPEC SEQLS exps_grph_ch:exp END SMCLN
+            {: 
+                RESULT = (ArrayList<String>)exp;
+            :}
+;
+
+varasigaxisY ::= AXISY DPOINTS DPOINTS TYPED SEQLS exps_est:exp END SMCLN
+            {: 
+                RESULT = exp;
+            :}
+;
+
+varasigtitleX ::= TTLX DPOINTS DPOINTS TYPEC SEQLS exps_chr:exp END SMCLN
+            {: 
+                RESULT = exp.toString();
+            :}
+;
+
+varasigtitleY ::= TTLY DPOINTS DPOINTS TYPEC SEQLS exps_chr:exp END SMCLN
+            {: 
+                RESULT = exp.toString();
+            :}
+;
+
+varasiglabel ::= LBL DPOINTS DPOINTS TYPEC SEQLS exps_grph_ch:exp END SMCLN
+            {: 
+                RESULT = (ArrayList<String>)exp;
+            :}
+;
+
+varasigvalues ::= VLS DPOINTS DPOINTS TYPED SEQLS exps_est:exp END SMCLN
+            {: 
+                RESULT = exp;
+            :}
+;

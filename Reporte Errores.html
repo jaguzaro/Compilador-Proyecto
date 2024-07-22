@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .table {
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        th {
+            background-color: #6c757d;
+            color: white;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .logo {
+            height: 50px;
+        }
+
+        .info {
+            text-align: right;
+        }
+
+        .date, .name {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="./fiusac_negro.png" alt="Logo" class="logo">
+        <div class="info">
+            <p class="date">Fecha: <span id="date"></span></p>
+            <p class="time">Hora: <span id="time"></span></p>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Tabla de Errores</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                      <th>#</th>
+  <th>Tipo</th>
+  <th>Descripcion</th>
+  <th>Linea</th>
+  <th>Columna</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                   <tr>
+       <td>1</td>
+       <td>Lexico</td>
+       <td>El caracter # no pertenece al lenguaje</td>
+       <td>1</td>
+       <td>9</td>
+   </tr>
+   <tr>
+       <td>2</td>
+       <td>Lexico</td>
+       <td>El caracter # no pertenece al lenguaje</td>
+       <td>18</td>
+       <td>0</td>
+   </tr>
+   <tr>
+       <td>3</td>
+       <td>Lexico</td>
+       <td>El caracter # no pertenece al lenguaje</td>
+       <td>43</td>
+       <td>12</td>
+   </tr>
+
+            </tbody>
+        </table>
+    </div>
+    <script>
+        function showDateTime() {
+            var now = new Date();
+            var date = now.toLocaleDateString();
+            var time = now.toLocaleTimeString();
+            document.getElementById('date').textContent = date;
+            document.getElementById('time').textContent = time;
+        }
+        showDateTime();
+    </script>
+</body>
+</html>
